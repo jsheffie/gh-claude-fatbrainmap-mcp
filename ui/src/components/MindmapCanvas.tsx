@@ -14,7 +14,8 @@ import { IssueNode } from "./IssueNode";
 import { BezierEdge } from "./BezierEdge";
 import { applyElkLayout } from "../hooks/useElkLayout";
 import { applyForceLayout } from "../hooks/useForceLayout";
-import type { Graph, IssueNodeData, RawEdge } from "../lib/types";
+import { applyDagreLayout } from "../hooks/useDagreLayout";
+import type { EdgeStyle, Graph, IssueNodeData, LayoutMode, RawEdge } from "../lib/types";
 
 const nodeTypes = { issue: IssueNode };
 const edgeTypes = { bezier: BezierEdge };
@@ -46,14 +47,40 @@ function buildInitial(graph: Graph): {
   return { nodes, edges };
 }
 
+async function runLayout(
+  nodes: Node<IssueNodeData>[],
+  edges: Edge<RawEdge>[],
+  layout: LayoutMode
+): Promise<Node<IssueNodeData>[]> {
+  if (layout === "force") return applyForceLayout(nodes, edges);
+  if (layout === "dagre-lr") return applyDagreLayout(nodes, edges, "LR");
+  if (layout === "dagre-tb") return applyDagreLayout(nodes, edges, "TB");
+  // fallback
+  return applyElkLayout(nodes, edges);
+}
+
+const LAYOUT_LABELS: Record<LayoutMode, string> = {
+  "force": "Auto",
+  "dagre-lr": "Left → Right",
+  "dagre-tb": "Top → Bottom",
+};
+
+const EDGE_LABELS: Record<EdgeStyle, string> = {
+  straight: "Straight",
+  bezier: "Curved",
+  smoothstep: "Step",
+};
+
 function CanvasInner({ graph }: Props) {
   const nodes = useMindmapStore((s) => s.nodes);
   const edges = useMindmapStore((s) => s.edges);
   const layout = useMindmapStore((s) => s.layout);
+  const edgeStyle = useMindmapStore((s) => s.edgeStyle);
   const hidden = useMindmapStore((s) => s.hidden);
   const setNodes = useMindmapStore((s) => s.setNodes);
   const setEdges = useMindmapStore((s) => s.setEdges);
   const setLayout = useMindmapStore((s) => s.setLayout);
+  const setEdgeStyle = useMindmapStore((s) => s.setEdgeStyle);
 
   // initial load
   useEffect(() => {
@@ -69,16 +96,14 @@ function CanvasInner({ graph }: Props) {
     const visibleEdges = edges.filter(
       (e) => !hidden.has(Number(e.source)) && !hidden.has(Number(e.target))
     );
-    const apply = layout === "elk" ? applyElkLayout : applyForceLayout;
-    apply(visibleNodes, visibleEdges).then((laid) => {
-      // merge laid positions back into the full node list
-      const positionById = new Map(laid.map((n) => [n.id, n.position]));
+    runLayout(visibleNodes, visibleEdges, layout).then((laid) => {
+      const positionById = new Map(laid.map((n) => [n.id, { position: n.position, sourcePosition: n.sourcePosition, targetPosition: n.targetPosition }]));
       setNodes(
-        nodes.map((n) =>
-          positionById.has(n.id)
-            ? { ...n, position: positionById.get(n.id)!, hidden: false }
-            : { ...n, hidden: true }
-        )
+        nodes.map((n) => {
+          if (!positionById.has(n.id)) return { ...n, hidden: true };
+          const { position, sourcePosition, targetPosition } = positionById.get(n.id)!;
+          return { ...n, position, sourcePosition, targetPosition, hidden: false };
+        })
       );
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -98,31 +123,44 @@ function CanvasInner({ graph }: Props) {
 
   return (
     <div className="w-full h-full relative">
-      <div className="absolute top-3 left-3 z-10 flex gap-2 bg-[#1a1d24] border border-white/10 rounded-lg p-1">
-        <button
-          onClick={() => setLayout("elk")}
-          className={`px-3 py-1 text-xs rounded ${
-            layout === "elk"
-              ? "bg-amber-400/20 text-amber-300"
-              : "text-white/60 hover:text-white"
-          }`}
-        >
-          Hierarchy
-        </button>
-        <button
-          onClick={() => setLayout("force")}
-          className={`px-3 py-1 text-xs rounded ${
-            layout === "force"
-              ? "bg-amber-400/20 text-amber-300"
-              : "text-white/60 hover:text-white"
-          }`}
-        >
-          Organic
-        </button>
+      {/* Layout + edge style toolbar */}
+      <div className="absolute top-3 left-3 z-10 flex gap-2">
+        <div className="flex gap-1 bg-[#1a1d24] border border-white/10 rounded-lg p-1">
+          {(Object.keys(LAYOUT_LABELS) as LayoutMode[]).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => setLayout(mode)}
+              className={`px-3 py-1 text-xs rounded whitespace-nowrap ${
+                layout === mode
+                  ? "bg-amber-400/20 text-amber-300"
+                  : "text-white/60 hover:text-white"
+              }`}
+            >
+              {LAYOUT_LABELS[mode]}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-1 bg-[#1a1d24] border border-white/10 rounded-lg p-1">
+          {(Object.keys(EDGE_LABELS) as EdgeStyle[]).map((style) => (
+            <button
+              key={style}
+              onClick={() => setEdgeStyle(style)}
+              className={`px-3 py-1 text-xs rounded ${
+                edgeStyle === style
+                  ? "bg-sky-400/20 text-sky-300"
+                  : "text-white/60 hover:text-white"
+              }`}
+            >
+              {EDGE_LABELS[style]}
+            </button>
+          ))}
+        </div>
       </div>
+
       <div className="absolute top-3 right-3 z-10 text-xs text-white/40 bg-[#1a1d24] border border-white/10 rounded-lg px-3 py-1.5">
         {graph.repo} · root #{graph.root} · right-click node to hide
       </div>
+
       <ReactFlow
         nodes={nodes}
         edges={visibleEdges}
@@ -135,6 +173,7 @@ function CanvasInner({ graph }: Props) {
       >
         <Background color="#2a2f3a" gap={24} />
         <Controls
+          position="bottom-right"
           className="!bg-[#1a1d24] !border-white/20 [&_button]:!bg-[#1a1d24] [&_button]:!border-white/20 [&_button]:!text-white/80 [&_button:hover]:!bg-white/10 [&_button]:!fill-white/80"
         />
       </ReactFlow>

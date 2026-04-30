@@ -32,13 +32,9 @@ function IssueNodeImpl({ data }: NodeProps) {
         if (!d.isRoot) hideNode(d.id);
       }}
     >
-      {/* All 4 sides as both source and target so React Flow picks the closest pair */}
-      <Handle type="target" position={Position.Top} id="t-top" style={handleStyle} />
-      <Handle type="target" position={Position.Bottom} id="t-bottom" style={handleStyle} />
+      {/* Left/right only — edges connect horizontally and flip sides as nodes move */}
       <Handle type="target" position={Position.Left} id="t-left" style={handleStyle} />
       <Handle type="target" position={Position.Right} id="t-right" style={handleStyle} />
-      <Handle type="source" position={Position.Top} id="s-top" style={handleStyle} />
-      <Handle type="source" position={Position.Bottom} id="s-bottom" style={handleStyle} />
       <Handle type="source" position={Position.Left} id="s-left" style={handleStyle} />
       <Handle type="source" position={Position.Right} id="s-right" style={handleStyle} />
       <div className="p-3">

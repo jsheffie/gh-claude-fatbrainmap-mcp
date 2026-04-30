@@ -7,7 +7,7 @@ import {
   type SimulationNodeDatum,
   type SimulationLinkDatum,
 } from "d3-force";
-import type { Edge, Node } from "@xyflow/react";
+import { Position, type Edge, type Node } from "@xyflow/react";
 import type { IssueNodeData, RawEdge } from "../lib/types";
 
 interface SimNode extends SimulationNodeDatum {
@@ -65,7 +65,13 @@ export function applyForceLayout(
     resolve(
       nodes.map((n) => {
         const pos = positionById.get(n.id);
-        return pos ? { ...n, position: pos } : n;
+        // Force layout is organic — use left/right handles so bezier curves exit horizontally
+        return pos ? {
+          ...n,
+          position: pos,
+          sourcePosition: Position.Right,
+          targetPosition: Position.Left,
+        } : n;
       })
     );
   });

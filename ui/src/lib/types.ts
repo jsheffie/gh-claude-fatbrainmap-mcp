@@ -41,4 +41,5 @@ export interface Graph {
   edges: RawEdge[];
 }
 
-export type LayoutMode = "elk" | "force";
+export type LayoutMode = "force" | "dagre-lr" | "dagre-tb";
+export type EdgeStyle = "straight" | "bezier" | "smoothstep";
