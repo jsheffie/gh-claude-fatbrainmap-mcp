@@ -27,7 +27,7 @@ function IssueNodeImpl({ data }: NodeProps) {
       <Handle type="source" position={Position.Left} style={hs} />
       <Handle type="target" position={Position.Left} style={hs} />
     <div
-      className={`rounded-xl border bg-[#1a1d24] shadow-lg w-[280px] ${
+      className={`rounded-xl border bg-[#1a1d24] shadow-lg w-[380px] ${
         d.isRoot
           ? "border-amber-400/60 ring-2 ring-amber-400/30"
           : "border-white/10"

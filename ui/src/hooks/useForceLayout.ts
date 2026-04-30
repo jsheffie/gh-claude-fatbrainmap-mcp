@@ -52,7 +52,7 @@ export function applyForceLayout(
           .strength(0.6)
       )
       .force("center", forceCenter(CANVAS_W / 2, CANVAS_H / 2))
-      .force("collide", forceCollide(160))
+      .force("collide", forceCollide(210))
       .stop();
 
     for (let i = 0; i < 300; i++) sim.tick();

@@ -4,8 +4,8 @@ import type { IssueNodeData, RawEdge } from "../lib/types";
 
 const elk = new ELK();
 
-const NODE_WIDTH = 280;
-const NODE_HEIGHT = 110;
+const NODE_WIDTH = 380;
+const NODE_HEIGHT = 120;
 
 const elkOptions = {
   "elk.algorithm": "layered",
