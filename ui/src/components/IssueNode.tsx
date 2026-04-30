@@ -3,6 +3,8 @@ import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { IssueNodeData } from "../lib/types";
 import { useMindmapStore } from "../store";
 
+const handleStyle = { opacity: 0, pointerEvents: "none" as const };
+
 const stateColor: Record<string, string> = {
   open: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
   closed: "bg-rose-500/20 text-rose-300 border-rose-500/40",
@@ -30,7 +32,15 @@ function IssueNodeImpl({ data }: NodeProps) {
         if (!d.isRoot) hideNode(d.id);
       }}
     >
-      <Handle type="target" position={Position.Top} className="!bg-white/30" />
+      {/* All 4 sides as both source and target so React Flow picks the closest pair */}
+      <Handle type="target" position={Position.Top} id="t-top" style={handleStyle} />
+      <Handle type="target" position={Position.Bottom} id="t-bottom" style={handleStyle} />
+      <Handle type="target" position={Position.Left} id="t-left" style={handleStyle} />
+      <Handle type="target" position={Position.Right} id="t-right" style={handleStyle} />
+      <Handle type="source" position={Position.Top} id="s-top" style={handleStyle} />
+      <Handle type="source" position={Position.Bottom} id="s-bottom" style={handleStyle} />
+      <Handle type="source" position={Position.Left} id="s-left" style={handleStyle} />
+      <Handle type="source" position={Position.Right} id="s-right" style={handleStyle} />
       <div className="p-3">
         <div className="flex items-center justify-between gap-2 mb-1">
           <span className="text-xs uppercase tracking-wider text-white/50">
@@ -70,7 +80,6 @@ function IssueNodeImpl({ data }: NodeProps) {
           </div>
         )}
       </div>
-      <Handle type="source" position={Position.Bottom} className="!bg-white/30" />
     </div>
   );
 }
