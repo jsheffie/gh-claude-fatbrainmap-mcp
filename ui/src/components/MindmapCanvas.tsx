@@ -1,24 +1,24 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   applyNodeChanges,
   Background,
-  ConnectionMode,
   Controls,
   ReactFlow,
   ReactFlowProvider,
+  useReactFlow,
   type Edge,
   type Node,
 } from "@xyflow/react";
 import { useMindmapStore } from "../store";
 import { IssueNode } from "./IssueNode";
-import { BezierEdge } from "./BezierEdge";
+import { FloatingEdge } from "./FloatingEdge";
 import { applyElkLayout } from "../hooks/useElkLayout";
 import { applyForceLayout } from "../hooks/useForceLayout";
 import { applyDagreLayout } from "../hooks/useDagreLayout";
 import type { EdgeStyle, Graph, IssueNodeData, LayoutMode, RawEdge } from "../lib/types";
 
 const nodeTypes = { issue: IssueNode };
-const edgeTypes = { bezier: BezierEdge };
+const edgeTypes = { floating: FloatingEdge };
 
 interface Props {
   graph: Graph;
@@ -32,16 +32,13 @@ function buildInitial(graph: Graph): {
     id: String(n.id),
     type: "issue",
     position: { x: 0, y: 0 },
-    data: {
-      ...n,
-      isRoot: n.id === graph.root,
-    },
+    data: { ...n, isRoot: n.id === graph.root },
   }));
   const edges: Edge<RawEdge>[] = graph.edges.map((e) => ({
     id: `${e.source}->${e.target}`,
     source: String(e.source),
     target: String(e.target),
-    type: "bezier",
+    type: "floating",
     data: e,
   }));
   return { nodes, edges };
@@ -55,12 +52,11 @@ async function runLayout(
   if (layout === "force") return applyForceLayout(nodes, edges);
   if (layout === "dagre-lr") return applyDagreLayout(nodes, edges, "LR");
   if (layout === "dagre-tb") return applyDagreLayout(nodes, edges, "TB");
-  // fallback
   return applyElkLayout(nodes, edges);
 }
 
 const LAYOUT_LABELS: Record<LayoutMode, string> = {
-  "force": "Auto",
+  force: "Auto",
   "dagre-lr": "Left → Right",
   "dagre-tb": "Top → Bottom",
 };
@@ -81,6 +77,8 @@ function CanvasInner({ graph }: Props) {
   const setEdges = useMindmapStore((s) => s.setEdges);
   const setLayout = useMindmapStore((s) => s.setLayout);
   const setEdgeStyle = useMindmapStore((s) => s.setEdgeStyle);
+  const { fitView } = useReactFlow();
+  const layoutPending = useRef(false);
 
   // initial load
   useEffect(() => {
@@ -89,7 +87,7 @@ function CanvasInner({ graph }: Props) {
     setEdges(initEdges);
   }, [graph, setNodes, setEdges]);
 
-  // re-layout whenever the layout mode or hidden set changes
+  // re-layout on layout mode / hidden / graph change, then fit view
   useEffect(() => {
     if (nodes.length === 0) return;
     const visibleNodes = nodes.filter((n) => !hidden.has(Number(n.id)));
@@ -97,17 +95,28 @@ function CanvasInner({ graph }: Props) {
       (e) => !hidden.has(Number(e.source)) && !hidden.has(Number(e.target))
     );
     runLayout(visibleNodes, visibleEdges, layout).then((laid) => {
-      const positionById = new Map(laid.map((n) => [n.id, { position: n.position, sourcePosition: n.sourcePosition, targetPosition: n.targetPosition }]));
+      const infoById = new Map(
+        laid.map((n) => [n.id, { position: n.position, sourcePosition: n.sourcePosition, targetPosition: n.targetPosition }])
+      );
       setNodes(
         nodes.map((n) => {
-          if (!positionById.has(n.id)) return { ...n, hidden: true };
-          const { position, sourcePosition, targetPosition } = positionById.get(n.id)!;
+          if (!infoById.has(n.id)) return { ...n, hidden: true };
+          const { position, sourcePosition, targetPosition } = infoById.get(n.id)!;
           return { ...n, position, sourcePosition, targetPosition, hidden: false };
         })
       );
+      layoutPending.current = true;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layout, hidden, graph]);
+
+  // fit view after nodes are updated from layout
+  useEffect(() => {
+    if (layoutPending.current && nodes.some((n) => !n.hidden)) {
+      layoutPending.current = false;
+      setTimeout(() => fitView({ padding: 0.15, duration: 300 }), 50);
+    }
+  }, [nodes, fitView]);
 
   const onNodesChange = useCallback(
     (changes: any) => {
@@ -123,7 +132,6 @@ function CanvasInner({ graph }: Props) {
 
   return (
     <div className="w-full h-full relative">
-      {/* Layout + edge style toolbar */}
       <div className="absolute top-3 left-3 z-10 flex gap-2">
         <div className="flex gap-1 bg-[#1a1d24] border border-white/10 rounded-lg p-1">
           {(Object.keys(LAYOUT_LABELS) as LayoutMode[]).map((mode) => (
@@ -131,9 +139,7 @@ function CanvasInner({ graph }: Props) {
               key={mode}
               onClick={() => setLayout(mode)}
               className={`px-3 py-1 text-xs rounded whitespace-nowrap ${
-                layout === mode
-                  ? "bg-amber-400/20 text-amber-300"
-                  : "text-white/60 hover:text-white"
+                layout === mode ? "bg-amber-400/20 text-amber-300" : "text-white/60 hover:text-white"
               }`}
             >
               {LAYOUT_LABELS[mode]}
@@ -146,9 +152,7 @@ function CanvasInner({ graph }: Props) {
               key={style}
               onClick={() => setEdgeStyle(style)}
               className={`px-3 py-1 text-xs rounded ${
-                edgeStyle === style
-                  ? "bg-sky-400/20 text-sky-300"
-                  : "text-white/60 hover:text-white"
+                edgeStyle === style ? "bg-sky-400/20 text-sky-300" : "text-white/60 hover:text-white"
               }`}
             >
               {EDGE_LABELS[style]}
@@ -167,7 +171,6 @@ function CanvasInner({ graph }: Props) {
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onNodesChange={onNodesChange}
-        connectionMode={ConnectionMode.Loose}
         fitView
         proOptions={{ hideAttribution: true }}
       >

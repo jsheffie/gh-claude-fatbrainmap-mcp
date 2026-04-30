@@ -1,9 +1,7 @@
 import { memo } from "react";
-import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { type NodeProps } from "@xyflow/react";
 import type { IssueNodeData } from "../lib/types";
 import { useMindmapStore } from "../store";
-
-const handleStyle = { opacity: 0, pointerEvents: "none" as const };
 
 const stateColor: Record<string, string> = {
   open: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
@@ -32,11 +30,6 @@ function IssueNodeImpl({ data }: NodeProps) {
         if (!d.isRoot) hideNode(d.id);
       }}
     >
-      {/* Left/right only — edges connect horizontally and flip sides as nodes move */}
-      <Handle type="target" position={Position.Left} id="t-left" style={handleStyle} />
-      <Handle type="target" position={Position.Right} id="t-right" style={handleStyle} />
-      <Handle type="source" position={Position.Left} id="s-left" style={handleStyle} />
-      <Handle type="source" position={Position.Right} id="s-right" style={handleStyle} />
       <div className="p-3">
         <div className="flex items-center justify-between gap-2 mb-1">
           <a
