@@ -1,8 +1,7 @@
 /**
  * Floating edge: connects at the nearest point on each node's border.
- * Uses center-to-center line intersection with the node's bounding rectangle.
  */
-import { useStore, getSmoothStepPath, type EdgeProps } from "@xyflow/react";
+import { BaseEdge, useStore, getSmoothStepPath, type EdgeProps } from "@xyflow/react";
 import type { RawEdge } from "../lib/types";
 import { useMindmapStore } from "../store";
 
@@ -27,60 +26,68 @@ function rectIntersection(
   return { x: cx + dx * (hh / absDy), y: cy + (dy > 0 ? hh : -hh) };
 }
 
-export function FloatingEdge({ id, source, target, data }: EdgeProps) {
-  // Subscribe directly to nodeLookup so we re-render when nodes become available
+export function FloatingEdge(props: EdgeProps) {
+  const { id, source, target, data, sourceX, sourceY, targetX, targetY } = props;
+
   const sourceNode = useStore((s) => s.nodeLookup.get(source));
   const targetNode = useStore((s) => s.nodeLookup.get(target));
   const edge = data as RawEdge | undefined;
   const isDirect = edge?.kind === "direct";
   const edgeStyle = useMindmapStore((s) => s.edgeStyle);
 
-  if (!sourceNode?.internals?.positionAbsolute || !targetNode?.internals?.positionAbsolute) {
-    return null;
+  const hasMeasured =
+    sourceNode?.internals?.positionAbsolute != null &&
+    targetNode?.internals?.positionAbsolute != null;
+
+  let sx: number, sy: number, ex: number, ey: number;
+  let srcSide: "left" | "right", tgtSide: "left" | "right";
+
+  if (hasMeasured) {
+    const sw = sourceNode!.measured?.width ?? NODE_WIDTH;
+    const sh = sourceNode!.measured?.height ?? NODE_HEIGHT;
+    const tw = targetNode!.measured?.width ?? NODE_WIDTH;
+    const th = targetNode!.measured?.height ?? NODE_HEIGHT;
+
+    const scx = sourceNode!.internals.positionAbsolute.x + sw / 2;
+    const scy = sourceNode!.internals.positionAbsolute.y + sh / 2;
+    const tcx = targetNode!.internals.positionAbsolute.x + tw / 2;
+    const tcy = targetNode!.internals.positionAbsolute.y + th / 2;
+
+    ({ x: sx, y: sy } = rectIntersection(scx, scy, tcx, tcy, sw, sh));
+    ({ x: ex, y: ey } = rectIntersection(tcx, tcy, scx, scy, tw, th));
+    srcSide = sx >= scx ? "right" : "left";
+    tgtSide = ex >= tcx ? "right" : "left";
+  } else {
+    sx = sourceX; sy = sourceY; ex = targetX; ey = targetY;
+    srcSide = sourceX <= targetX ? "right" : "left";
+    tgtSide = targetX <= sourceX ? "right" : "left";
   }
 
-  const sw = sourceNode.measured?.width ?? NODE_WIDTH;
-  const sh = sourceNode.measured?.height ?? NODE_HEIGHT;
-  const tw = targetNode.measured?.width ?? NODE_WIDTH;
-  const th = targetNode.measured?.height ?? NODE_HEIGHT;
-
-  const scx = sourceNode.internals.positionAbsolute.x + sw / 2;
-  const scy = sourceNode.internals.positionAbsolute.y + sh / 2;
-  const tcx = targetNode.internals.positionAbsolute.x + tw / 2;
-  const tcy = targetNode.internals.positionAbsolute.y + th / 2;
-
-  const { x: sx, y: sy } = rectIntersection(scx, scy, tcx, tcy, sw, sh);
-  const { x: ex, y: ey } = rectIntersection(tcx, tcy, scx, scy, tw, th);
-
   let path: string;
-  if (edgeStyle === "straight") {
-    path = `M ${sx} ${sy} L ${ex} ${ey}`;
-  } else if (edgeStyle === "smoothstep") {
-    const srcPos = sx >= scx ? "right" : "left" as any;
-    const tgtPos = ex >= tcx ? "right" : "left" as any;
+  if (edgeStyle === "smoothstep") {
     [path] = getSmoothStepPath({
-      sourceX: sx, sourceY: sy, sourcePosition: srcPos,
-      targetX: ex, targetY: ey, targetPosition: tgtPos,
+      sourceX: sx, sourceY: sy, sourcePosition: srcSide as any,
+      targetX: ex, targetY: ey, targetPosition: tgtSide as any,
       borderRadius: 16,
     });
+  } else if (edgeStyle === "straight") {
+    path = `M ${sx} ${sy} L ${ex} ${ey}`;
   } else {
-    // bezier: horizontal S-curve, control points pull outward from the connection side
-    const curvature = Math.max(Math.abs(tcx - scx) * 0.4, 60);
-    const srcDir = sx >= scx ? 1 : -1;
-    const tgtDir = ex >= tcx ? 1 : -1;
-    path = `M ${sx} ${sy} C ${sx + srcDir * curvature} ${sy}, ${ex + tgtDir * curvature} ${ey}, ${ex} ${ey}`;
+    // bezier
+    const curvature = Math.max(Math.abs(ex - sx) * 0.4, 60);
+    const srcOff = srcSide === "right" ? curvature : -curvature;
+    const tgtOff = tgtSide === "right" ? curvature : -curvature;
+    path = `M ${sx} ${sy} C ${sx + srcOff} ${sy}, ${ex + tgtOff} ${ey}, ${ex} ${ey}`;
   }
 
   return (
-    <path
+    <BaseEdge
       id={id}
-      className="react-flow__edge-path"
-      d={path}
+      path={path}
       style={{
         stroke: isDirect ? "rgba(251,191,36,0.7)" : "rgba(148,163,184,0.5)",
         strokeWidth: isDirect ? 2 : 1.5,
         strokeDasharray: isDirect ? undefined : "6 4",
-        fill: "none",
       }}
     />
   );

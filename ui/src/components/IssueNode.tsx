@@ -1,7 +1,11 @@
 import { memo } from "react";
-import { type NodeProps } from "@xyflow/react";
+import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { IssueNodeData } from "../lib/types";
 import { useMindmapStore } from "../store";
+
+// Invisible handles required so React Flow's edge renderer activates.
+// FloatingEdge ignores these and computes its own border intersection points.
+const hs = { opacity: 0, pointerEvents: "none" as const, width: 1, height: 1 };
 
 const stateColor: Record<string, string> = {
   open: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
@@ -19,6 +23,9 @@ function IssueNodeImpl({ data }: NodeProps) {
   const hideNode = useMindmapStore((s) => s.hideNode);
 
   return (
+    <>
+      <Handle type="source" position={Position.Left} style={hs} />
+      <Handle type="target" position={Position.Left} style={hs} />
     <div
       className={`rounded-xl border bg-[#1a1d24] shadow-lg w-[280px] ${
         d.isRoot
@@ -77,6 +84,7 @@ function IssueNodeImpl({ data }: NodeProps) {
         )}
       </div>
     </div>
+    </>
   );
 }
 
