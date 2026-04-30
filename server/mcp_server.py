@@ -1,7 +1,9 @@
+import os
 import secrets
+import signal
+import socket
 import threading
 import time
-from typing import Any
 
 import uvicorn
 from fastmcp import FastMCP
@@ -15,6 +17,33 @@ WEB_PORT = 8765
 
 _server_started = False
 _server_lock = threading.Lock()
+
+
+def _kill_port_occupant(host: str, port: int) -> None:
+    """Kill any process already listening on host:port (macOS/Linux)."""
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["lsof", "-ti", f"TCP:{port}"],
+            capture_output=True, text=True
+        )
+        for pid_str in result.stdout.strip().splitlines():
+            try:
+                os.kill(int(pid_str), signal.SIGTERM)
+            except (ProcessLookupError, ValueError):
+                pass
+        # give them a moment to die
+        time.sleep(0.3)
+    except Exception:
+        pass
+
+
+def _port_in_use(host: str, port: int) -> bool:
+    try:
+        with socket.create_connection((host, port), timeout=0.2):
+            return True
+    except OSError:
+        return False
 
 
 def _run_uvicorn() -> None:
@@ -34,18 +63,16 @@ def ensure_web_server_started() -> None:
     with _server_lock:
         if _server_started:
             return
+        # Kill any stale server from a previous session so our session store is authoritative
+        if _port_in_use(WEB_HOST, WEB_PORT):
+            _kill_port_occupant(WEB_HOST, WEB_PORT)
         thread = threading.Thread(target=_run_uvicorn, daemon=True, name="fatbrainmap-web")
         thread.start()
-        # brief wait so the URL we return is actually serving
-        for _ in range(20):
-            time.sleep(0.05)
-            try:
-                import socket
-
-                with socket.create_connection((WEB_HOST, WEB_PORT), timeout=0.1):
-                    break
-            except OSError:
-                continue
+        # wait for port to accept connections
+        for _ in range(40):
+            time.sleep(0.1)
+            if _port_in_use(WEB_HOST, WEB_PORT):
+                break
         _server_started = True
 
 
