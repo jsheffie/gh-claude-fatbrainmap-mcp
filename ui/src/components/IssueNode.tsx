@@ -43,9 +43,15 @@ function IssueNodeImpl({ data }: NodeProps) {
       <Handle type="source" position={Position.Right} id="s-right" style={handleStyle} />
       <div className="p-3">
         <div className="flex items-center justify-between gap-2 mb-1">
-          <span className="text-xs uppercase tracking-wider text-white/50">
+          <a
+            href={d.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="nopan text-xs uppercase tracking-wider text-white/50 hover:text-amber-300"
+            onClick={(e) => e.stopPropagation()}
+          >
             {kindLabel[d.kind]} #{d.id}
-          </span>
+          </a>
           <span
             className={`text-[10px] px-2 py-0.5 rounded border ${
               stateColor[d.state] || "bg-white/10 text-white/70 border-white/20"
@@ -58,7 +64,8 @@ function IssueNodeImpl({ data }: NodeProps) {
           href={d.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="block text-sm font-medium text-white/90 hover:text-amber-300 hover:underline leading-snug"
+          className="nopan block text-sm font-medium text-white/90 hover:text-amber-300 hover:underline leading-snug"
+          onClick={(e) => e.stopPropagation()}
         >
           {d.title}
         </a>

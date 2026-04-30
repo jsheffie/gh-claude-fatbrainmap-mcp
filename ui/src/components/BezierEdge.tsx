@@ -1,4 +1,4 @@
-import { BaseEdge, getBezierPath, type EdgeProps } from "@xyflow/react";
+import { BaseEdge, getSmoothStepPath, type EdgeProps } from "@xyflow/react";
 import type { RawEdge } from "../lib/types";
 
 export function BezierEdge(props: EdgeProps) {
@@ -14,13 +14,14 @@ export function BezierEdge(props: EdgeProps) {
   const edge = data as RawEdge | undefined;
   const isDirect = edge?.kind === "direct";
 
-  const [path] = getBezierPath({
+  const [path] = getSmoothStepPath({
     sourceX,
     sourceY,
     targetX,
     targetY,
     sourcePosition,
     targetPosition,
+    borderRadius: 16,
   });
 
   return (

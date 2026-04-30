@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo } from "react";
 import {
+  applyNodeChanges,
   Background,
   ConnectionMode,
   Controls,
-  MiniMap,
   ReactFlow,
   ReactFlowProvider,
   type Edge,
@@ -86,14 +86,7 @@ function CanvasInner({ graph }: Props) {
 
   const onNodesChange = useCallback(
     (changes: any) => {
-      setNodes(
-        nodes.map((n) => {
-          const change = changes.find((c: any) => c.id === n.id && c.type === "position");
-          return change && change.position
-            ? { ...n, position: change.position }
-            : n;
-        })
-      );
+      setNodes(applyNodeChanges(changes, nodes));
     },
     [nodes, setNodes]
   );
@@ -141,11 +134,8 @@ function CanvasInner({ graph }: Props) {
         proOptions={{ hideAttribution: true }}
       >
         <Background color="#2a2f3a" gap={24} />
-        <Controls className="!bg-[#1a1d24] !border-white/10" />
-        <MiniMap
-          maskColor="rgba(15,17,21,0.8)"
-          nodeColor={(n) => (n.data?.isRoot ? "#fbbf24" : "#475569")}
-          className="!bg-[#1a1d24] !border-white/10"
+        <Controls
+          className="!bg-[#1a1d24] !border-white/20 [&_button]:!bg-[#1a1d24] [&_button]:!border-white/20 [&_button]:!text-white/80 [&_button:hover]:!bg-white/10 [&_button]:!fill-white/80"
         />
       </ReactFlow>
     </div>
