@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "repo": "huvrdata/huvr",
+  "root": 42,
+  "nodes": [
+    {
+      "id": 42,
+      "kind": "issue",
+      "state": "open",
+      "title": "Sessions randomly expire for users in UTC+12",
+      "url": "https://github.com/huvrdata/huvr/issues/42",
+      "labels": ["bug", "auth"],
+      "milestone": "v2.1"
+    },
+    {
+      "id": 38,
+      "kind": "pr",
+      "state": "merged",
+      "title": "Add session expiry config",
+      "url": "https://github.com/huvrdata/huvr/pull/38",
+      "labels": ["auth"],
+      "milestone": "v2.1"
+    },
+    {
+      "id": 51,
+      "kind": "issue",
+      "state": "open",
+      "title": "Users randomly logged out on mobile",
+      "url": "https://github.com/huvrdata/huvr/issues/51",
+      "labels": ["bug", "mobile"],
+      "milestone": null
+    },
+    {
+      "id": 29,
+      "kind": "issue",
+      "state": "closed",
+      "title": "Session management refactor",
+      "url": "https://github.com/huvrdata/huvr/issues/29",
+      "labels": ["auth", "refactor"],
+      "milestone": "v2.1"
+    },
+    {
+      "id": 44,
+      "kind": "pr",
+      "state": "open",
+      "title": "Update JWT expiry handling",
+      "url": "https://github.com/huvrdata/huvr/pull/44",
+      "labels": ["auth"],
+      "milestone": null
+    },
+    {
+      "id": 67,
+      "kind": "issue",
+      "state": "open",
+      "title": "Add timezone-aware session tests",
+      "url": "https://github.com/huvrdata/huvr/issues/67",
+      "labels": ["test", "auth"],
+      "milestone": null
+    }
+  ],
+  "edges": [
+    { "source": 42, "target": 38, "kind": "direct", "reason": "body says 'fixes #38'" },
+    { "source": 42, "target": 51, "kind": "direct", "reason": "mentioned in comment" },
+    { "source": 42, "target": 29, "kind": "semantic", "reason": "shared label: auth, milestone: v2.1" },
+    { "source": 42, "target": 44, "kind": "semantic", "reason": "keyword match: session, jwt" },
+    { "source": 42, "target": 67, "kind": "semantic", "reason": "shared label: auth" }
+  ]
+}

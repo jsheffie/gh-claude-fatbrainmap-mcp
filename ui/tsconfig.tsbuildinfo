@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/store.ts","./src/components/bezieredge.tsx","./src/components/issuenode.tsx","./src/components/mindmapcanvas.tsx","./src/hooks/useelklayout.ts","./src/hooks/useforcelayout.ts","./src/lib/api.ts","./src/lib/types.ts"],"version":"5.9.3"}

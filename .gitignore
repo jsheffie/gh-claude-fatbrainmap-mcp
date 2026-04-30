@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.env
+
+node_modules/
+.vite/
+ui/dist/
+server/static/
+
+.DS_Store
+*.swp

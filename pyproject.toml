@@ -1,0 +1,34 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gh-claude-fatbrainmap-mcp"
+version = "0.1.0"
+description = "MCP server that visualizes GitHub issue/PR relationship graphs as interactive mindmaps"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+authors = [{ name = "Jeff Sheffield", email = "jeff.sheffield@gmail.com" }]
+keywords = ["mcp", "claude", "github", "mindmap", "visualization"]
+
+dependencies = [
+  "fastmcp>=0.2.0",
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.27",
+  "pydantic>=2.6",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "httpx>=0.27"]
+
+[project.scripts]
+gh-claude-fatbrainmap-mcp = "server.mcp_server:main"
+
+[project.urls]
+Homepage = "https://github.com/jsheffie/gh-claude-fatbrainmap-mcp"
+Repository = "https://github.com/jsheffie/gh-claude-fatbrainmap-mcp"
+
+[tool.hatch.build.targets.wheel]
+packages = ["server"]
+# server/static is created by `npm run build`; included automatically when present.
