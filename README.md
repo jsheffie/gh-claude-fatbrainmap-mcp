@@ -14,12 +14,20 @@ An MCP server that turns GitHub issue/PR relationship graphs into interactive mi
 
 ## Install
 
+Until this is on PyPI, install from source:
+
 ```bash
-pip install gh-claude-fatbrainmap-mcp
-claude mcp add fatbrainmap -- gh-claude-fatbrainmap-mcp
+git clone https://github.com/jsheffie/gh-claude-fatbrainmap-mcp.git
+cd gh-claude-fatbrainmap-mcp
+python -m venv .venv && source .venv/bin/activate
+pip install -e .
+(cd ui && npm install && npm run build)
+
+# Register with Claude Code (user scope = available in every project)
+claude mcp add fatbrainmap --scope user -- "$(pwd)/.venv/bin/gh-claude-fatbrainmap-mcp"
 ```
 
-Then in Claude Code, run `/mcp` to confirm it's connected. Once connected, the `gh-claude` plugin's `/gh-claude:gh-related N` will detect the MCP tool and offer the visualization.
+Then restart Claude Code (or run `/mcp` to verify). Once connected, the `gh-claude` plugin's `/gh-claude:gh-related N` will detect the MCP tool and append a clickable mindmap URL to its output.
 
 ## Local development
 
